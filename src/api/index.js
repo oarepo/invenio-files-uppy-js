@@ -7,4 +7,4 @@
  * under the terms of the MIT License; see LICENSE file for more details.
  */
 
-export * from "./api";
+export * from "./client";
