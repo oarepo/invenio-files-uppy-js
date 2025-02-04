@@ -23,7 +23,7 @@
       "format": "prettier --write \"src/**/*.js\""
     },
     "dependencies": {
-        "@uppy/core": "^3.13.1"
+        "@uppy/core": "^4.4.2"
     },
     "peerDependencies": {
       "@babel/runtime": "^7.9.0",
