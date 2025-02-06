@@ -1,0 +1,245 @@
+/*
+ * This file is part of Invenio-Files-Uppy-Js.
+ * Copyright (C) 2025 CERN.
+ * Copyright (C) 2025 CESNET.
+ *
+ * Invenio-Files-Uppy-Js is free software; you can redistribute it and/or modify it
+ * under the terms of the MIT License; see LICENSE file for more details.
+ */
+
+// TODO: internationalization using i18next?
+
+import Uppy from "@uppy/core";
+import { DragDrop } from "@uppy/react";
+
+import { useFormikContext } from "formik";
+import _get from "lodash/get";
+import _isEmpty from "lodash/isEmpty";
+import _map from "lodash/map";
+import PropTypes from "prop-types";
+import React, { useState } from "react";
+import { Button, Grid, Icon, Message, Modal } from "semantic-ui-react";
+import { humanReadableBytes } from "react-invenio-forms";
+import Overridable from "react-overridable";
+
+export const UppyUploaderComponent = ({
+  config,
+  files,
+  isDraftRecord,
+  hasParentRecord,
+  quota,
+  permissions,
+  record,
+  uploadFiles,
+  deleteFile,
+  importParentFiles,
+  importButtonIcon,
+  importButtonText,
+  isFileImportInProgress,
+  decimalSizeDisplay,
+  filesLocked,
+  allowEmptyFiles,
+  ...uiProps
+}) => {
+  // We extract the working copy of the draft stored as `values` in formik
+  const [uppy] = useState(() => new Uppy());
+  // const filesList = useUppyState(uppy, (state) => state.files);
+  // const totalProgress = useUppyState(uppy, (state) => state.totalProgress);
+
+  const filesList = [];
+  // TODO: implement following by uppy
+  const { values: formikDraft } = useFormikContext();
+  const filesEnabled = _get(formikDraft, "files.enabled", false);
+  const [warningMsg, setWarningMsg] = useState();
+  const lockFileUploader = !isDraftRecord && filesLocked;
+
+  const filesSize = filesList.reduce((totalSize, file) => (totalSize += file.size), 0);
+
+  const dropzoneParams = {
+    preventDropOnDocument: true,
+    onDropAccepted: (acceptedFiles) => {
+      const maxFileNumberReached =
+        filesList.length + acceptedFiles.length > quota.maxFiles;
+      const acceptedFilesSize = acceptedFiles.reduce(
+        (totalSize, file) => (totalSize += file.size),
+        0
+      );
+      const maxFileStorageReached = filesSize + acceptedFilesSize > quota.maxStorage;
+
+      const filesNames = _map(filesList, "name");
+      const filesNamesSet = new Set(filesNames);
+
+      const { duplicateFiles, emptyFiles, nonEmptyFiles } = acceptedFiles.reduce(
+        (accumulators, file) => {
+          if (filesNamesSet.has(file.name)) {
+            accumulators.duplicateFiles.push(file);
+          } else if (file.size === 0) {
+            accumulators.emptyFiles.push(file);
+          } else {
+            accumulators.nonEmptyFiles.push(file);
+          }
+
+          return accumulators;
+        },
+        { duplicateFiles: [], emptyFiles: [], nonEmptyFiles: [] }
+      );
+
+      const hasEmptyFiles = !_isEmpty(emptyFiles);
+      const hasDuplicateFiles = !_isEmpty(duplicateFiles);
+
+      if (maxFileNumberReached) {
+        setWarningMsg(
+          <div className="content">
+            <Message
+              warning
+              icon="warning circle"
+              // header={i18next.t("Could not upload files.")}
+              // content={i18next.t(
+              //   `Uploading the selected files would result in ${
+              //     filesList.length + acceptedFiles.length
+              //   } files (max.${quota.maxFiles})`
+              // )}
+            />
+          </div>
+        );
+      } else if (maxFileStorageReached) {
+        setWarningMsg(
+          <div className="content">
+            <Message
+              warning
+              icon="warning circle"
+              // header={i18next.t("Could not upload files.")}
+              content={
+                <>
+                  {/* {i18next.t("Uploading the selected files would result in")}{" "} */}
+                  {humanReadableBytes(
+                    filesSize + acceptedFilesSize,
+                    decimalSizeDisplay
+                  )}
+                  {/* {i18next.t("but the limit is")} */}
+                  {humanReadableBytes(quota.maxStorage, decimalSizeDisplay)}.
+                </>
+              }
+            />
+          </div>
+        );
+      } else {
+        let warnings = [];
+
+        if (hasDuplicateFiles) {
+          warnings.push(
+            <Message
+              warning
+              icon="warning circle"
+              // header={i18next.t("The following files already exist")}
+              list={_map(duplicateFiles, "name")}
+            />
+          );
+        }
+
+        if (!allowEmptyFiles && hasEmptyFiles) {
+          warnings.push(
+            <Message
+              warning
+              icon="warning circle"
+              // header={i18next.t("Could not upload all files.")}
+              // content={i18next.t("Empty files were skipped.")}
+              list={_map(emptyFiles, "name")}
+            />
+          );
+        }
+
+        if (!_isEmpty(warnings)) {
+          setWarningMsg(<div className="content">{warnings}</div>);
+        }
+
+        const filesToUpload = allowEmptyFiles
+          ? [...nonEmptyFiles, ...emptyFiles]
+          : nonEmptyFiles;
+
+        // Proceed with uploading files if there are any to upload
+        if (!_isEmpty(filesToUpload)) {
+          uploadFiles(formikDraft, filesToUpload);
+        }
+      }
+    },
+    multiple: true,
+    noClick: true,
+    noKeyboard: true,
+    disabled: false,
+  };
+
+  const filesLeft = filesList.length < quota.maxFiles;
+  if (!filesLeft) {
+    // dropzoneParams["disabled"] = true;
+  }
+
+  const displayImportBtn =
+    filesEnabled && isDraftRecord && hasParentRecord && !filesList.length;
+  return (
+    <DragDrop uppy={uppy} id="uppy-drop-target">
+      Upload files
+    </DragDrop>
+  );
+};
+
+// const fileDetailsShape = PropTypes.objectOf(
+//   PropTypes.shape({
+//     name: PropTypes.string,
+//     size: PropTypes.number,
+//     progressPercentage: PropTypes.number,
+//     checksum: PropTypes.string,
+//     links: PropTypes.object,
+//     cancelUploadFn: PropTypes.func,
+//     state: PropTypes.oneOf(Object.values(UploadState)),
+//     enabled: PropTypes.bool,
+//   })
+// );
+
+UppyUploaderComponent.propTypes = {
+  config: PropTypes.object,
+  dragText: PropTypes.string,
+  files: PropTypes.any,
+  // files: fileDetailsShape,
+  isDraftRecord: PropTypes.bool,
+  hasParentRecord: PropTypes.bool,
+  quota: PropTypes.shape({
+    maxStorage: PropTypes.number,
+    maxFiles: PropTypes.number,
+  }),
+  record: PropTypes.object,
+  uploadButtonIcon: PropTypes.string,
+  uploadButtonText: PropTypes.string,
+  importButtonIcon: PropTypes.string,
+  importButtonText: PropTypes.string,
+  isFileImportInProgress: PropTypes.bool,
+  importParentFiles: PropTypes.func.isRequired,
+  uploadFiles: PropTypes.func.isRequired,
+  deleteFile: PropTypes.func.isRequired,
+  decimalSizeDisplay: PropTypes.bool,
+  filesLocked: PropTypes.bool,
+  permissions: PropTypes.object,
+  allowEmptyFiles: PropTypes.bool,
+};
+
+UppyUploaderComponent.defaultProps = {
+  permissions: undefined,
+  config: undefined,
+  files: undefined,
+  record: undefined,
+  isFileImportInProgress: false,
+  // dragText: i18next.t("Drag and drop files"),
+  isDraftRecord: true,
+  hasParentRecord: false,
+  quota: {
+    maxFiles: 5,
+    maxStorage: 10 ** 10,
+  },
+  uploadButtonIcon: "upload",
+  // uploadButtonText: i18next.t("Upload files"),
+  importButtonIcon: "sync",
+  // importButtonText: i18next.t("Import files"),
+  decimalSizeDisplay: true,
+  filesLocked: false,
+  allowEmptyFiles: true,
+};
