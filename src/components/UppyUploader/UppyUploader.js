@@ -9,8 +9,13 @@
 
 // TODO: internationalization using i18next?
 
+import "@uppy/core/dist/style.min.css";
+// TODO: reset .uppy-DashboardContent-bar z-index
+// TODO: reset .uppy-StatusBar z-index
+import "@uppy/dashboard/dist/style.min.css";
+
 import Uppy from "@uppy/core";
-import { DragDrop } from "@uppy/react";
+import { Dashboard } from "@uppy/react";
 
 import { useFormikContext } from "formik";
 import _get from "lodash/get";
@@ -18,9 +23,17 @@ import _isEmpty from "lodash/isEmpty";
 import _map from "lodash/map";
 import PropTypes from "prop-types";
 import React, { useState } from "react";
-import { Button, Grid, Icon, Message, Modal } from "semantic-ui-react";
+import { Button, Grid, Icon, Message } from "semantic-ui-react";
 import { humanReadableBytes } from "react-invenio-forms";
 import Overridable from "react-overridable";
+import { InvenioMultipartUploader } from "./InvenioMultipartUploader";
+import { useFilesList, FilesListTable } from "@js/invenio_rdm_records";
+
+const defaultDashboardProps = {
+  proudlyDisplayPoweredByUppy: false,
+  height: "100%",
+  width: "100%",
+};
 
 export const UppyUploaderComponent = ({
   config,
@@ -31,6 +44,8 @@ export const UppyUploaderComponent = ({
   permissions,
   record,
   uploadFiles,
+  initializeFileUpload,
+  finalizeUpload,
   deleteFile,
   importParentFiles,
   importButtonIcon,
@@ -42,13 +57,22 @@ export const UppyUploaderComponent = ({
   ...uiProps
 }) => {
   // We extract the working copy of the draft stored as `values` in formik
-  const [uppy] = useState(() => new Uppy());
+  const { values: formikDraft } = useFormikContext();
+  const { filesList } = useFilesList(files);
+
+  const [uppy] = useState(() =>
+    new Uppy().use(InvenioMultipartUploader, {
+      // Bind Redux actions to the uploader plugin
+      initializeUpload: (file) => initializeFileUpload(formikDraft, file),
+      finalizeUpload: (file) => finalizeUpload(file.links.commit, file),
+    })
+  );
+
+  console.log("Record files", { files });
   // const filesList = useUppyState(uppy, (state) => state.files);
   // const totalProgress = useUppyState(uppy, (state) => state.totalProgress);
 
-  const filesList = [];
   // TODO: implement following by uppy
-  const { values: formikDraft } = useFormikContext();
   const filesEnabled = _get(formikDraft, "files.enabled", false);
   const [warningMsg, setWarningMsg] = useState();
   const lockFileUploader = !isDraftRecord && filesLocked;
@@ -177,9 +201,39 @@ export const UppyUploaderComponent = ({
   const displayImportBtn =
     filesEnabled && isDraftRecord && hasParentRecord && !filesList.length;
   return (
-    <DragDrop uppy={uppy} id="uppy-drop-target">
-      Upload files
-    </DragDrop>
+    <Overridable
+      id="ReactInvenioDeposit.FileUploader.FileUploaderArea.container"
+      filesList={filesList}
+      dropzoneParams={dropzoneParams}
+      filesLocked={lockFileUploader}
+      filesEnabled={filesEnabled}
+      deleteFile={deleteFile}
+      decimalSizeDisplay={decimalSizeDisplay}
+      {...uiProps}
+    >
+      {filesEnabled && (
+        <Grid.Row className="pt-0 pb-0">
+          <Dashboard
+            uppy={uppy}
+            id="uppy-uploader-dashboard"
+            // `null` means "do not display a Done button in a status bar"
+            doneButtonHandler={null}
+            {...defaultDashboardProps}
+            {...uiProps}
+          />
+          {filesList.length !== 0 && (
+            <Grid.Column verticalAlign="middle">
+              <FilesListTable
+                filesList={filesList}
+                filesLocked={filesLocked}
+                deleteFile={deleteFile}
+                decimalSizeDislay={decimalSizeDisplay}
+              />
+            </Grid.Column>
+          )}
+        </Grid.Row>
+      )}
+    </Overridable>
   );
 };
 
@@ -214,7 +268,10 @@ UppyUploaderComponent.propTypes = {
   importButtonText: PropTypes.string,
   isFileImportInProgress: PropTypes.bool,
   importParentFiles: PropTypes.func.isRequired,
+  initializeFileUpload: PropTypes.func.isRequired,
+  uploadFile: PropTypes.func.isRequired,
   uploadFiles: PropTypes.func.isRequired,
+  finalizeUpload: PropTypes.func.isRequired,
   deleteFile: PropTypes.func.isRequired,
   decimalSizeDisplay: PropTypes.bool,
   filesLocked: PropTypes.bool,

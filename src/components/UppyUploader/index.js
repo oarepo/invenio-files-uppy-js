@@ -7,7 +7,14 @@
  * under the terms of the MIT License; see LICENSE file for more details.
  */
 import { connect } from "react-redux";
-import { deleteFile, importParentFiles, uploadFiles } from "@js/invenio_rdm_records";
+import {
+  deleteFile,
+  importParentFiles,
+  initializeFileUpload,
+  uploadFile,
+  uploadFiles,
+  finalizeUpload,
+} from "@js/invenio_rdm_records";
 import { UppyUploaderComponent } from "./UppyUploader";
 
 const mapStateToProps = (state) => {
@@ -26,7 +33,11 @@ const mapStateToProps = (state) => {
 };
 
 const mapDispatchToProps = (dispatch) => ({
+  initializeFileUpload: (draft, file) => dispatch(initializeFileUpload(draft, file)),
+  uploadFile: (draft, file) => dispatch(uploadFile(draft, file)),
   uploadFiles: (draft, files) => dispatch(uploadFiles(draft, files)),
+  finalizeUpload: (commitFileURL, file) =>
+    dispatch(finalizeUpload(commitFileURL, file)),
   importParentFiles: () => dispatch(importParentFiles()),
   deleteFile: (file) => dispatch(deleteFile(file)),
 });

@@ -13,4 +13,26 @@ export class UppyDepositFileApiClient extends DepositFileApiClient {
     super(additionalApiConfig);
     this.transferType = defaultTransferType || FILE_TRANSFER_TYPE.LOCAL;
   }
+
+  initializeFileUpload(initializeUploadUrl, filename, transferOptions) {
+    console.log("IFU", initializeUploadUrl, filename, transferOptions);
+
+    const { fileSize, ...opts } = transferOptions;
+
+    const payload = [
+      {
+        key: filename,
+        size: fileSize,
+        transfer: {
+          type: this.transferType,
+          ...opts,
+        },
+      },
+    ];
+    return this.axiosWithConfig.post(initializeUploadUrl, payload, {});
+  }
+
+  finalizeFileUpload(finalizeUploadUrl) {
+    return this.axiosWithConfig.post(finalizeUploadUrl, {});
+  }
 }
