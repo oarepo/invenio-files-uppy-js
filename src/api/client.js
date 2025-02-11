@@ -35,4 +35,8 @@ export class UppyDepositFileApiClient extends DepositFileApiClient {
   finalizeFileUpload(finalizeUploadUrl) {
     return this.axiosWithConfig.post(finalizeUploadUrl, {});
   }
+
+  deleteFile(fileLinks, options) {
+    return this.axiosWithConfig.delete(fileLinks.self, options);
+  }
 }

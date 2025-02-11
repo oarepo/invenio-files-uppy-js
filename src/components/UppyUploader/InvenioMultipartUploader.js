@@ -1,7 +1,11 @@
+// TODO: If WASM undesirable, we can use something like Crypto-JS?
+import { md5 } from "hash-wasm";
 import AwsS3Multipart from "@uppy/aws-s3-multipart";
+import { fetcher } from "@uppy/utils/lib/fetcher";
+
 import { humanReadableBytes } from "react-invenio-forms";
 
-import { FileSizeError, InvalidPartNumberError } from "./error";
+import { FileSizeError, InvalidPartNumberError, SignedUrlExpiredError } from "./error";
 
 const defaultOptions = {
   // TODO: null here means “include all”, [] means include none.
@@ -14,6 +18,7 @@ const defaultOptions = {
   retryDelays: [0, 1000, 3000, 5000],
   companionHeaders: {},
   uploadFiles: () => {},
+  checkPartIntegrity: false,
 };
 
 export class InvenioMultipartUploader extends AwsS3Multipart {
@@ -28,8 +33,56 @@ export class InvenioMultipartUploader extends AwsS3Multipart {
     this.type = "uploader";
     this.id = this.opts.id || "InvenioMultipartUpload";
     this.getChunkSize = this.opts.getChunkSize || this.getChunkSize;
-
     this.i18nInit();
+  }
+
+  install() {
+    super();
+    const state = this.uppy.getState();
+
+    // Disable resumable uploads Uppy capability.
+    // Currently unsupported, as it requires missing API
+    // implementation for the `listParts` method.
+    this.uppy.setState({
+      ...state,
+      capabilities: {
+        ...state.capabilities,
+        resumableUploads: false,
+      },
+    });
+  }
+
+  #getFetcher = (file) => {
+    return async (url, options) => {
+      try {
+        const res = await fetcher(url, {
+          ...options,
+          shouldRetry: this.opts.shouldRetry,
+          onTimeout: (timeout) => {
+            const seconds = Math.ceil(timeout / 1000);
+            const error = new Error(this.i18n("uploadStalled", { seconds }));
+            this.uppy.emit("upload-stalled", error, [file]);
+          },
+        });
+
+        const body = JSON.parse(res.responseText);
+        return body;
+      } catch (error) {
+        if (error.name === "AbortError") {
+          return undefined;
+        }
+        const request = error.request;
+        this.uppy.emit("upload-error", this.uppy.getFile(file.id), error, request);
+
+        throw error;
+      }
+    };
+  };
+
+  async #getPartDigest(blob) {
+    const arrayBuffer = await blob.arrayBuffer();
+    const digest = await md5(new Uint8Array(arrayBuffer));
+    return digest;
   }
 
   /**
@@ -110,9 +163,16 @@ export class InvenioMultipartUploader extends AwsS3Multipart {
    *   - url – the presigned URL, as a string.
    *   - headers – (Optional) Custom headers to send along with the request to S3 endpoint.
    */
-  signPart(file, partData) {
-    const { partNumber } = partData;
+  async signPart(file, partData) {
+    const { partNumber, signal, body } = partData;
     const signedPartUrls = file.links.parts;
+
+    const headers = {};
+
+    if (this.opts.checkPartIntegrity) {
+      const contentMd5 = await this.#getPartDigest(body);
+      headers["Content-MD5"] = contentMd5;
+    }
 
     if (partNumber < 1 || partNumber > signedPartUrls.length) {
       throw new InvalidPartNumberError(
@@ -126,11 +186,25 @@ export class InvenioMultipartUploader extends AwsS3Multipart {
 
     const { expiration, url } = signedPartUrls.find(({ part }) => part === partNumber);
 
-    // TODO: check for signed part data expiration & request re-sign when needed
-    // Get file.links.self to refresh urls
+    const expiryDate = new Date(expiration);
+    const now = new Date();
+    if (now > expiryDate) {
+      const fetch = this.#getFetcher(file, { signal });
+      // Re-fetching file metadata will re-generate signed part URLs
+      const fileMetadata = await fetch(file.links.self);
+      file.links = fileMetadata.links;
 
-    // TODO: add Content-MD5 header to PUT partData
-    return { url };
+      // Throw an error to let Uppy retry with fresh state
+      throw new SignedUrlExpiredError(
+        this.i18n("signedUrlExpired", {
+          partNumber: partNumber,
+          file: file.name ?? this.getI18n()("unnamed"),
+        }),
+        { file, partNumber }
+      );
+    }
+
+    return { url, headers };
   }
 
   /**
@@ -153,5 +227,7 @@ export class InvenioMultipartUploader extends AwsS3Multipart {
    * A function that calls the S3 Multipart API to abort a Multipart upload,
    * and removes all parts that have been uploaded so far.
    */
-  abortMultipartUpload(file, { uploadId, key }) {}
+  async abortMultipartUpload(file, { uploadId, key }) {
+    await this.opts.abortUpload(file, uploadId);
+  }
 }

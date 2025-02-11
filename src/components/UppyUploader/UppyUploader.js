@@ -62,13 +62,18 @@ export const UppyUploaderComponent = ({
 
   const [uppy] = useState(() =>
     new Uppy().use(InvenioMultipartUploader, {
-      // Bind Redux actions to the uploader plugin
+      // Bind Redux file actions to the uploader plugin
       initializeUpload: (file) => initializeFileUpload(formikDraft, file),
       finalizeUpload: (file) => finalizeUpload(file.links.commit, file),
+      abortUpload: (file, uploadId) => deleteFile(file.links, { params: { uploadId } }),
+      // Calculates & verifies checksum for every uploaded part
+      // TODO: this feature currently computes part checksums,
+      // but S3 presign url don't like it when Content-MD5 header is added
+      // *after* their creation. PUT request with this added header
+      // results in HTTP 400 Bad Request. Needs more investigation.
+      checkPartIntegrity: false,
     })
   );
-
-  console.log("Record files", { files });
   // const filesList = useUppyState(uppy, (state) => state.files);
   // const totalProgress = useUppyState(uppy, (state) => state.totalProgress);
 
@@ -237,24 +242,23 @@ export const UppyUploaderComponent = ({
   );
 };
 
-// const fileDetailsShape = PropTypes.objectOf(
-//   PropTypes.shape({
-//     name: PropTypes.string,
-//     size: PropTypes.number,
-//     progressPercentage: PropTypes.number,
-//     checksum: PropTypes.string,
-//     links: PropTypes.object,
-//     cancelUploadFn: PropTypes.func,
-//     state: PropTypes.oneOf(Object.values(UploadState)),
-//     enabled: PropTypes.bool,
-//   })
-// );
+const fileDetailsShape = PropTypes.objectOf(
+  PropTypes.shape({
+    name: PropTypes.string,
+    size: PropTypes.number,
+    progressPercentage: PropTypes.number,
+    checksum: PropTypes.string,
+    links: PropTypes.object,
+    cancelUploadFn: PropTypes.func,
+    state: PropTypes.any, // PropTypes.oneOf(Object.values(UploadState)), can't reach UploadState from here
+    enabled: PropTypes.bool,
+  })
+);
 
 UppyUploaderComponent.propTypes = {
   config: PropTypes.object,
   dragText: PropTypes.string,
-  files: PropTypes.any,
-  // files: fileDetailsShape,
+  files: fileDetailsShape,
   isDraftRecord: PropTypes.bool,
   hasParentRecord: PropTypes.bool,
   quota: PropTypes.shape({

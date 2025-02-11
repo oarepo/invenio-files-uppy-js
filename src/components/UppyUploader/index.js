@@ -39,7 +39,7 @@ const mapDispatchToProps = (dispatch) => ({
   finalizeUpload: (commitFileURL, file) =>
     dispatch(finalizeUpload(commitFileURL, file)),
   importParentFiles: () => dispatch(importParentFiles()),
-  deleteFile: (file) => dispatch(deleteFile(file)),
+  deleteFile: (file, options) => dispatch(deleteFile(file, options)),
 });
 
 export const UppyUploader = connect(

@@ -38,3 +38,20 @@ export class InvalidPartNumberError extends Error {
     }
   }
 }
+
+export class SignedUrlExpiredError extends Error {
+  file;
+  partNumber;
+  isUserFacing;
+
+  constructor(message, opts) {
+    super(message);
+    this.isUserFacing = opts?.isUserFacing ?? false;
+    if (opts?.file) {
+      this.file = opts.file;
+    }
+    if (opts?.partNumber) {
+      this.partNumber = opts.partNumber;
+    }
+  }
+}

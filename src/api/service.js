@@ -94,9 +94,9 @@ export class UppyDepositFilesService extends DepositFilesService {
     await this._startNewUpload(initializeUploadURL, file);
   };
 
-  delete = async (fileLinks) => {
-    console.log("D", fileLinks);
-    return await this.fileApiClient.deleteFile(fileLinks);
+  delete = async (fileLinks, options) => {
+    console.log("D", fileLinks, options);
+    return await this.fileApiClient.deleteFile(fileLinks, options);
   };
 
   importParentRecordFiles = async (draftLinks) => {
