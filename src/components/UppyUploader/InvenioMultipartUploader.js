@@ -37,20 +37,22 @@ export class InvenioMultipartUploader extends AwsS3Multipart {
   }
 
   install() {
-    super();
-    const state = this.uppy.getState();
-
+    AwsS3Multipart.prototype.install.apply(this);
     // Disable resumable uploads Uppy capability.
     // Currently unsupported, as it requires missing API
     // implementation for the `listParts` method.
+    this.#setResumableUploadsCapability(false);
+  }
+
+  #setResumableUploadsCapability = (boolean) => {
+    const { capabilities } = this.uppy.getState();
     this.uppy.setState({
-      ...state,
       capabilities: {
-        ...state.capabilities,
-        resumableUploads: false,
+        ...capabilities,
+        resumableUploads: boolean,
       },
     });
-  }
+  };
 
   #getFetcher = (file) => {
     return async (url, options) => {
