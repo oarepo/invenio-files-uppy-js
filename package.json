@@ -34,7 +34,7 @@
     },
     "peerDependencies": {
         "@babel/runtime": "^7.9.0",
-        "react": "^16.13.0",
+        "react": "^19.0.0",
         "react-dom": "^16.13.0"
     },
     "devDependencies": {
@@ -48,7 +48,7 @@
         "enzyme-adapter-react-16": "^1.15.0",
         "expect": "^26.5.0",
         "json": "^10.0.0",
-        "react": "^16.13.0",
+        "react": "^19.0.0",
         "react-dom": "^16.13.0",
         "react-scripts": "^5.0.1",
         "rimraf": "^3.0.0",
