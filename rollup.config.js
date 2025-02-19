@@ -32,13 +32,16 @@ const rollupConfig = {
       sourceMap: "inline",
     }),
     localResolve(),
-    resolve(),
+    resolve({
+      extensions: [".js", ".jsx"],
+    }),
     babel({
       presets: ["react-app"],
       babelHelpers: "runtime",
       exclude: "node_modules/**",
     }),
     commonjs(),
+    // pluginSyntaxJSX(),
   ],
 };
 

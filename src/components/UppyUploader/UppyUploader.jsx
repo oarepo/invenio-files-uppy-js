@@ -236,6 +236,9 @@ export const UppyUploaderComponent = ({
               />
             </Grid.Column>
           )}
+          <code>
+            DEBUG: Uppy capabilities: {JSON.stringify(uppy.getState().capabilities, 2)}
+          </code>
         </Grid.Row>
       )}
     </Overridable>

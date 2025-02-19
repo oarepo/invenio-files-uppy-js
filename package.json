@@ -1,101 +1,127 @@
 {
-    "name": "@inveniosoftware/invenio-files-uppy",
-    "version": "0.0.1",
-    "description": "Uppy.io uploader integration for managing file uploads in Invenio deposit forms",
-    "main": "dist/cjs/index.js",
-    "browser": "dist/cjs/index.js",
-    "module": "dist/esm/index.js",
-    "files": [
-        "dist"
+  "name": "@inveniosoftware/invenio-files-uppy",
+  "version": "0.0.1",
+  "description": "Uppy.io uploader integration for managing file uploads in Invenio deposit forms",
+  "main": "dist/cjs/index.js",
+  "browser": "dist/cjs/index.js",
+  "module": "dist/esm/index.js",
+  "files": [
+    "dist"
+  ],
+  "scripts": {
+    "start": "react-scripts start",
+    "build": "rimraf dist && NODE_ENV=production rollup -c",
+    "edit-linked-package": "json -I -f ./dist/package.json -e 'this.module=\"esm/index.js\", this.main=\"cjs/index.js\"' ",
+    "prelink-dist": "cp package.json ./dist && npm run edit-linked-package",
+    "link-dist": "cd dist && npm link",
+    "postlink-dist": "cd dist && rm -rf node_modules",
+    "unlink-dist": "cd dist && npm unlink && rm package*",
+    "watch": "NODE_ENV=development rollup --watch -c",
+    "test": "react-scripts test --transformIgnorePatterns /\"node_modules/(?!axios)/\" && npm run test-storybook",
+    "eject": "react-scripts eject",
+    "lint": "eslint src/ --ext .js --max-warnings=0",
+    "format": "prettier --write \"src/**/*.js\"",
+    "storybook": "storybook dev -p 6006",
+    "build-storybook": "storybook build",
+    "test-stories": "./tests/run-storybook.sh",
+    "test-storybook": "./node_modules/.bin/test-storybook"
+  },
+  "dependencies": {
+    "@uppy/aws-s3-multipart": "^3.12.0",
+    "@uppy/core": "^3.13.1",
+    "@uppy/dashboard": "^3.9.1",
+    "@uppy/drag-drop": "^3.1.1",
+    "@uppy/file-input": "^3.1.2",
+    "@uppy/progress-bar": "^3.1.1",
+    "@uppy/react": "^3.4.0",
+    "hash-wasm": "^4.12.0"
+  },
+  "peerDependencies": {
+    "@babel/runtime": "^7.9.0",
+    "formik": "^2.2.9",
+    "react": "^16.13.0",
+    "react-dom": "^16.13.0",
+    "react-invenio-forms": "^3.0.0",
+    "react-overridable": "^0.0.3"
+  },
+  "devDependencies": {
+    "@inveniosoftware/eslint-config-invenio": "^2.0.0",
+    "@rollup/plugin-babel": "^5.2.0",
+    "@rollup/plugin-commonjs": "^15.1.0",
+    "@rollup/plugin-node-resolve": "^9.0.0",
+    "@storybook/addon-coverage": "^1.0.5",
+    "@storybook/addon-essentials": "^8.5.6",
+    "@storybook/addon-interactions": "^8.5.6",
+    "@storybook/addon-storysource": "^8.5.8",
+    "@storybook/blocks": "^8.5.6",
+    "@storybook/react": "^8.5.6",
+    "@storybook/react-vite": "^8.5.6",
+    "@storybook/test": "^8.5.6",
+    "@storybook/test-runner": "^0.21.0",
+    "coveralls": "^3.1.1",
+    "enzyme": "^3.10.0",
+    "enzyme-adapter-react-16": "^1.15.0",
+    "eslint-plugin-storybook": "^0.11.3",
+    "expect": "^26.5.0",
+    "formik": "^2.2.9",
+    "http-server": "14.1.1",
+    "json": "^10.0.0",
+    "prop-types": "^15.8.1",
+    "react": "^16.13.0",
+    "react-dom": "^16.13.0",
+    "react-invenio-forms": "^3.0.0",
+    "react-overridable": "^0.0.3",
+    "react-scripts": "^5.0.1",
+    "rimraf": "^3.0.0",
+    "rollup": "^2.29.0",
+    "rollup-plugin-local-resolve": "^1.0.0",
+    "rollup-plugin-peer-deps-external": "^2.2.0",
+    "rollup-plugin-postcss": "^4.0.0",
+    "storybook": "^8.5.6",
+    "util": "^0.12.5",
+    "wait-on": "^8.0.1"
+  },
+  "author": {
+    "name": "CERN",
+    "email": "info@inveniosoftware.org"
+  },
+  "homepage": "https://inveniosoftware.github.io/invenio-files-uppy-js/",
+  "bugs": {
+    "url": "https://github.com/inveniosoftware/invenio-files-uppy-js/issues"
+  },
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/inveniosoftware/invenio-files-uppy-js.git"
+  },
+  "keywords": [
+    "react",
+    "react-component",
+    "react-searchkit",
+    "uploader",
+    "react file uploads",
+    "invenio"
+  ],
+  "eslintConfig": {
+    "extends": [
+      "react-library",
+      "plugin:storybook/recommended"
+    ]
+  },
+  "browserslist": {
+    "production": [
+      ">0.2%",
+      "not dead",
+      "not op_mini all",
+      "not IE 11"
     ],
-    "scripts": {
-        "start": "react-scripts start",
-        "build": "rimraf dist && NODE_ENV=production rollup -c",
-        "edit-linked-package": "json -I -f ./dist/package.json -e 'this.module=\"esm/index.js\", this.main=\"cjs/index.js\"' ",
-        "prelink-dist": "cp package.json ./dist && npm run edit-linked-package",
-        "link-dist": "cd dist && npm link",
-        "postlink-dist": "cd dist && rm -rf node_modules",
-        "unlink-dist": "cd dist && npm unlink && rm package*",
-        "watch": "NODE_ENV=development rollup --watch -c",
-        "test": "react-scripts test --transformIgnorePatterns /\"node_modules/(?!axios)/\"",
-        "eject": "react-scripts eject",
-        "lint": "eslint src/ --ext .js --max-warnings=0",
-        "format": "prettier --write \"src/**/*.js\""
-    },
-    "dependencies": {
-        "@uppy/aws-s3-multipart": "^3.12.0",
-        "@uppy/core": "^3.13.1",
-        "@uppy/dashboard": "^3.9.1",
-        "@uppy/drag-drop": "^3.1.1",
-        "@uppy/file-input": "^3.1.2",
-        "@uppy/progress-bar": "^3.1.1",
-        "@uppy/react": "^3.4.0",
-        "hash-wasm": "^4.12.0"
-    },
-    "peerDependencies": {
-        "@babel/runtime": "^7.9.0",
-        "react": "^16.13.0",
-        "react-dom": "^16.13.0"
-    },
-    "devDependencies": {
-        "@babel/cli": "^7.11.0",
-        "@inveniosoftware/eslint-config-invenio": "^2.0.0",
-        "@rollup/plugin-babel": "^5.2.0",
-        "@rollup/plugin-commonjs": "^15.1.0",
-        "@rollup/plugin-node-resolve": "^9.0.0",
-        "coveralls": "^3.1.1",
-        "enzyme": "^3.10.0",
-        "enzyme-adapter-react-16": "^1.15.0",
-        "expect": "^26.5.0",
-        "json": "^10.0.0",
-        "react": "^16.13.0",
-        "react-dom": "^16.13.0",
-        "react-scripts": "^5.0.1",
-        "rimraf": "^3.0.0",
-        "rollup": "^2.29.0",
-        "rollup-plugin-local-resolve": "^1.0.0",
-        "rollup-plugin-peer-deps-external": "^2.2.0",
-        "rollup-plugin-postcss": "^4.0.0",
-        "util": "^0.12.5"
-    },
-    "author": {
-        "name": "CERN",
-        "email": "info@inveniosoftware.org"
-    },
-    "homepage": "https://inveniosoftware.github.io/invenio-files-uppy-js/",
-    "bugs": {
-        "url": "https://github.com/inveniosoftware/invenio-files-uppy-js/issues"
-    },
-    "license": "MIT",
-    "repository": {
-        "type": "git",
-        "url": "https://github.com/inveniosoftware/invenio-files-uppy-js.git"
-    },
-    "keywords": [
-        "react",
-        "react-component",
-        "react-searchkit",
-        "uploader",
-        "react file uploads",
-        "invenio"
-    ],
-    "eslintConfig": {
-        "extends": "react-library"
-    },
-    "browserslist": {
-        "production": [
-            ">0.2%",
-            "not dead",
-            "not op_mini all",
-            "not IE 11"
-        ],
-        "development": [
-            "last 1 chrome version",
-            "last 1 firefox version",
-            "last 1 safari version"
-        ]
-    },
-    "engines": {
-        "node": ">=18.0.0"
-    }
+    "development": [
+      "last 1 chrome version",
+      "last 1 firefox version",
+      "last 1 safari version"
+    ]
+  },
+  "engines": {
+    "node": ">=18.0.0"
+  }
 }

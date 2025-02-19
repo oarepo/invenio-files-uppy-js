@@ -13,8 +13,8 @@ const defaultOptions = {
   allowedMetaFields: null,
   limit: 6,
   getTemporarySecurityCredentials: false,
-  shouldUseMultipart: (file) => file.size > 0, // (file.size >> 10) >> 10 > 100,
   getUploadParameters: null,
+  shouldUseMultipart: null,
   retryDelays: [0, 1000, 3000, 5000],
   companionHeaders: {},
   uploadFiles: () => {},
@@ -23,6 +23,7 @@ const defaultOptions = {
 
 export class InvenioMultipartUploader extends AwsS3Multipart {
   static VERSION = "0.0.1";
+  #maxMultipartParts = 10_000;
 
   constructor(uppy, opts) {
     super(uppy, {
@@ -32,8 +33,13 @@ export class InvenioMultipartUploader extends AwsS3Multipart {
     });
     this.type = "uploader";
     this.id = this.opts.id || "InvenioMultipartUpload";
-    this.getChunkSize = this.opts.getChunkSize || this.getChunkSize;
+    this.getChunkSize = opts.getChunkSize || this.getChunkSize;
+    this.shouldUseMultipart = this.opts.shouldUseMultipart || this.shouldUseMultipart;
     this.i18nInit();
+    super.setOptions({
+      // Here we override default implementation in AwsS3Multipart
+      shouldUseMultipart: this.shouldUseMultipart.bind(this),
+    });
   }
 
   install() {
@@ -88,6 +94,29 @@ export class InvenioMultipartUploader extends AwsS3Multipart {
   }
 
   /**
+   * A boolean, or a function that returns a boolean which is called for each file that is uploaded with the corresponding UppyFile instance as argument.
+   *
+   * By default, all files with a file.size ≤ getChunkSize will be uploaded in a single chunk, all files larger than that as multipart.
+   * @param {*} file the file object from Uppy’s state. The most relevant keys are file.name and file.type
+   */
+  shouldUseMultipart(file) {
+    const chunkSize = this.getChunkSize(file);
+    const partCount = Math.ceil(file.size / chunkSize);
+    console.log("SUM", partCount > 1);
+
+    return partCount > 1;
+  }
+
+  /**
+   * A function that will be called for each non-multipart upload.
+   * @param {*} file the file object from Uppy’s state. The most relevant keys are file.name and file.type
+   * @param {*} options object: signal: AbortSignal
+   */
+  getUploadParameters(file, options) {
+    // TODO: implement for single local transfer type uploads
+  }
+
+  /**
    * A function that returns the minimum chunk size to use when uploading the given file as multipart.
    * For multipart uploads, chunks are sent in batches to have presigned URLs generated with signPart(). To reduce the amount of requests for large files, you can choose a larger chunk size, at the cost of having to re-upload more data if one chunk fails to upload.
    * S3 requires a minimum chunk size of 5MiB, and supports at most 10,000 chunks per multipart upload. If getChunkSize() returns a size that’s too small, Uppy will increase it to S3’s minimum requirements.
@@ -97,15 +126,14 @@ export class InvenioMultipartUploader extends AwsS3Multipart {
    */
   getChunkSize(file) {
     console.log("GCS", file);
-    const maxChunks = 10240;
     const MiB = 1024 * 1024;
     const minPartSize = MiB * 5;
     const midPartSize = MiB * 25;
     const maxPartSize = MiB * 250;
 
-    const smallFile = file.size <= maxChunks * minPartSize;
-    const mediumFile = file.size <= maxChunks * midPartSize;
-    const largeFile = file.size <= maxChunks * maxPartSize;
+    const smallFile = file.size <= this.#maxMultipartParts * minPartSize;
+    const mediumFile = file.size <= this.#maxMultipartParts * midPartSize;
+    const largeFile = file.size <= this.#maxMultipartParts * maxPartSize;
 
     const chunkSize = smallFile
       ? minPartSize
@@ -118,7 +146,7 @@ export class InvenioMultipartUploader extends AwsS3Multipart {
     if (chunkSize === undefined) {
       throw new FileSizeError(
         this.i18n("exceedsSize", {
-          size: humanReadableBytes(maxPartSize * maxChunks),
+          size: humanReadableBytes(maxPartSize * this.#maxMultipartParts),
           file: file.name ?? this.getI18n()("unnamed"),
         }),
         { file }
