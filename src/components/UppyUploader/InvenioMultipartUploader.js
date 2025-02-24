@@ -2,7 +2,6 @@
 import { md5 } from "hash-wasm";
 import AwsS3Multipart from "@uppy/aws-s3-multipart";
 import { fetcher } from "@uppy/utils/lib/fetcher";
-
 import { humanReadableBytes } from "react-invenio-forms";
 
 import { FileSizeError, InvalidPartNumberError, SignedUrlExpiredError } from "./error";
@@ -35,6 +34,7 @@ export class InvenioMultipartUploader extends AwsS3Multipart {
     this.id = this.opts.id || "InvenioMultipartUpload";
     this.getChunkSize = opts.getChunkSize || this.getChunkSize;
     this.shouldUseMultipart = this.opts.shouldUseMultipart || this.shouldUseMultipart;
+
     this.i18nInit();
     super.setOptions({
       // Here we override default implementation in AwsS3Multipart
@@ -112,8 +112,15 @@ export class InvenioMultipartUploader extends AwsS3Multipart {
    * @param {*} file the file object from Uppy’s state. The most relevant keys are file.name and file.type
    * @param {*} options object: signal: AbortSignal
    */
-  getUploadParameters(file, options) {
-    // TODO: implement for single local transfer type uploads
+  async getUploadParameters(file, options) {
+    const filename = file.meta.name;
+    const { type, size } = file.meta;
+
+    file.transferOptions = { size, type: "L" };
+
+    const uploadParams = await this.opts.initializeUpload(file);
+
+    return { method: "PUT", ...uploadParams };
   }
 
   /**
