@@ -89,6 +89,7 @@ export class InvenioMultipartUploader extends AwsS3Multipart {
 
   async #getPartDigest(blob) {
     const arrayBuffer = await blob.arrayBuffer();
+    // TODO: convert from hexadecimal to bytestring to base64
     const digest = await md5(new Uint8Array(arrayBuffer));
     return digest;
   }
@@ -113,14 +114,14 @@ export class InvenioMultipartUploader extends AwsS3Multipart {
    * @param {*} options object: signal: AbortSignal
    */
   async getUploadParameters(file, options) {
-    const filename = file.meta.name;
-    const { type, size } = file.meta;
+    file.transferOptions = { fileSize: file.size, type: "L" };
 
-    file.transferOptions = { size, type: "L" };
-
-    const uploadParams = await this.opts.initializeUpload(file);
-
-    return { method: "PUT", ...uploadParams };
+    const fileMetadata = await this.opts.initializeUpload(file);
+    return {
+      method: "PUT",
+      url: fileMetadata.links.content,
+      headers: { "Content-Type": file.type },
+    };
   }
 
   /**
@@ -176,6 +177,7 @@ export class InvenioMultipartUploader extends AwsS3Multipart {
       fileSize: file.size,
       parts: Math.ceil(file.size / chunkSize),
       part_size: chunkSize,
+      type: "M",
     };
 
     const response = await this.opts.initializeUpload(file);
