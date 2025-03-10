@@ -116,12 +116,7 @@ export class InvenioMultipartUploader extends AwsS3Multipart {
   async getUploadParameters(file, options) {
     file.transferOptions = { fileSize: file.size, type: "L" };
 
-    const fileMetadata = await this.opts.initializeUpload(file);
-    return {
-      method: "PUT",
-      url: fileMetadata.links.content,
-      headers: { "Content-Type": file.type },
-    };
+    return this.opts.getUploadParams(file, options);
   }
 
   /**

@@ -118,4 +118,8 @@ export class UppyDepositFilesService extends DepositFilesService {
       {}
     );
   };
+
+  getUploadParams = async (fileContentUrl, file, options) => {
+    return this.fileApiClient.getUploadParams(fileContentUrl, file, options);
+  };
 }

@@ -11,6 +11,7 @@ import {
   deleteFile,
   importParentFiles,
   initializeFileUpload,
+  getUploadParams,
   uploadFile,
   uploadFiles,
   finalizeUpload,
@@ -40,6 +41,8 @@ const mapDispatchToProps = (dispatch) => ({
     dispatch(finalizeUpload(commitFileURL, file)),
   importParentFiles: () => dispatch(importParentFiles()),
   deleteFile: (file, options) => dispatch(deleteFile(file, options)),
+  getUploadParams: (draft, file, options) =>
+    dispatch(getUploadParams(draft, file, options)),
 });
 
 export const UppyUploader = connect(

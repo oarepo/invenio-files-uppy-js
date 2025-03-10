@@ -68,4 +68,53 @@ export class UppyDepositFileApiClient extends DepositFileApiClient {
   deleteFile(fileLinks, options) {
     return this.axiosWithConfig.delete(fileLinks.self, options);
   }
+
+  /**
+   * This method is required by Uppy to do single-part small file uploads.
+   * These uploads are managed through a simple XHRHttpRequest-based upload request,
+   * and thus cannot reuse current axiosWithConfig instance to make the request.
+   *
+   * @param {*} fileContentUrl link to upload the file data to
+   * @param {*} file Uppy file metadata
+   * @param {*} options extra request options
+   * @returns
+   */
+  getUploadParams = async (fileContentUrl, file, options) => {
+    console.log("GUP", fileContentUrl, file, options);
+
+    const axiosDefaults = this.axiosWithConfig.defaults;
+
+    // Extract headers, ensuring they are merged properly
+    const xhrHeaders = {
+      ...axiosDefaults.headers.common, // Common headers like Authorization
+    };
+
+    if (axiosDefaults.xsrfCookieName && axiosDefaults.xsrfHeaderName) {
+      /**
+       * Ensure CSRF headers are included
+       * TODO: Kinda ugly manual parsing. We can instead consider using:
+       * import Cookies from "js-cookie";
+       * const csrfToken = Cookies.get("csrftoken");
+       */
+      const csrfToken = document.cookie
+        .split("; ")
+        .find((row) => row.startsWith(`${axiosDefaults.xsrfCookieName}=`))
+        ?.split("=")[1];
+
+      if (csrfToken) {
+        xhrHeaders[axiosDefaults.xsrfHeaderName] = csrfToken;
+      }
+    }
+
+    const resp = {
+      method: "PUT",
+      url: fileContentUrl,
+      headers: {
+        ...xhrHeaders,
+        // The following is hard-coded into drafts files resource
+        "Content-Type": "application/octet-stream",
+      },
+    };
+    return resp;
+  };
 }
