@@ -40,6 +40,9 @@ export class InvenioMultipartUploader extends AwsS3Multipart {
       // Here we override default implementation in AwsS3Multipart
       shouldUseMultipart: this.shouldUseMultipart.bind(this),
     });
+
+    // Register event hooks
+    uppy.on("upload-success", this.#completeSinglePartUpload);
   }
 
   install() {
@@ -49,6 +52,13 @@ export class InvenioMultipartUploader extends AwsS3Multipart {
     // implementation for the `listParts` method.
     this.#setResumableUploadsCapability(false);
   }
+
+  #completeSinglePartUpload = (file, response) => {
+    const { uploadURL } = response;
+    if (!uploadURL) return;
+
+    this.completeMultipartUpload(file, { uploadId: file.file_id, key: response.key });
+  };
 
   #setResumableUploadsCapability = (boolean) => {
     const { capabilities } = this.uppy.getState();
@@ -116,7 +126,12 @@ export class InvenioMultipartUploader extends AwsS3Multipart {
   async getUploadParameters(file, options) {
     file.transferOptions = { fileSize: file.size, type: "L" };
 
-    return this.opts.getUploadParams(file, options);
+    const response = await this.opts.getUploadParams(file, options);
+
+    file.links = response.links;
+    file.file_id = response.file_id;
+
+    return response;
   }
 
   /**
