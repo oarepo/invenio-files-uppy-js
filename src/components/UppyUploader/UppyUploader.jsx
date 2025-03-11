@@ -20,12 +20,9 @@ import { Dashboard } from "@uppy/react";
 
 import { useFormikContext } from "formik";
 import _get from "lodash/get";
-import _isEmpty from "lodash/isEmpty";
-import _map from "lodash/map";
 import PropTypes from "prop-types";
 import React, { useState } from "react";
 import { Button, Grid, Icon, Message } from "semantic-ui-react";
-import { humanReadableBytes } from "react-invenio-forms";
 import Overridable from "react-overridable";
 import { InvenioMultipartUploader } from "./InvenioMultipartUploader";
 import {
@@ -77,8 +74,6 @@ export const UppyUploaderComponent = ({
     maxTotalFileSize: quota.maxStorage - filesSize,
   };
 
-  console.log({ filesLeft });
-
   function checkForDuplicates(file, files) {
     console.log(files, filesList.includes(file.name), filesList, file.name);
   }
@@ -107,6 +102,14 @@ export const UppyUploaderComponent = ({
     // .use(InvenioRecordFilesSource, {})
   );
 
+  React.useEffect(() => {
+    const dashboardPlugin = uppy.getPlugin("Dashboard");
+    if (!dashboardPlugin) return;
+    dashboardPlugin.setOptions({
+      disabled: !filesLeft,
+    });
+  }, [filesLeft, uppy]);
+
   console.log(uppy.getFiles());
 
   // TODO: this hook-based approach could be used after React upgrade
@@ -133,7 +136,6 @@ export const UppyUploaderComponent = ({
       <Overridable
         id="ReactInvenioDeposit.FileUploader.FileUploaderArea.container"
         filesList={filesList}
-        // dropzoneParams={dropzoneParams}
         filesLocked={lockFileUploader}
         filesEnabled={filesEnabled}
         deleteFile={deleteFile}
