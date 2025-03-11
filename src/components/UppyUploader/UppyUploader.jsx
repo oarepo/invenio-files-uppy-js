@@ -65,7 +65,6 @@ export const UppyUploaderComponent = ({
   // We extract the working copy of the draft stored as `values` in formik
   const { values: formikDraft } = useFormikContext();
   const { filesList } = useFilesList(files);
-  const [warningMsg, setWarningMsg] = useState();
 
   const filesEnabled = _get(formikDraft, "files.enabled", false);
   const filesSize = filesList.reduce((totalSize, file) => (totalSize += file.size), 0);
@@ -77,6 +76,8 @@ export const UppyUploaderComponent = ({
     maxNumberOfFiles: quota.maxFiles - filesList.length,
     maxTotalFileSize: quota.maxStorage - filesSize,
   };
+
+  console.log({ filesLeft });
 
   function checkForDuplicates(file, files) {
     console.log(files, filesList.includes(file.name), filesList, file.name);
@@ -111,114 +112,6 @@ export const UppyUploaderComponent = ({
   // TODO: this hook-based approach could be used after React upgrade
   // const filesList = useUppyState(uppy, (state) => state.files);
   // const totalProgress = useUppyState(uppy, (state) => state.totalProgress);
-
-  // TODO: implement following by uppy
-
-  // const dropzoneParams = {
-  //   preventDropOnDocument: true,
-  //   onDropAccepted: (acceptedFiles) => {
-  //     const filesNames = _map(filesList, "name");
-  //     const filesNamesSet = new Set(filesNames);
-
-  //     const { duplicateFiles, emptyFiles, nonEmptyFiles } = acceptedFiles.reduce(
-  //       (accumulators, file) => {
-  //         if (filesNamesSet.has(file.name)) {
-  //           accumulators.duplicateFiles.push(file);
-  //         } else if (file.size === 0) {
-  //           accumulators.emptyFiles.push(file);
-  //         } else {
-  //           accumulators.nonEmptyFiles.push(file);
-  //         }
-
-  //         return accumulators;
-  //       },
-  //       { duplicateFiles: [], emptyFiles: [], nonEmptyFiles: [] }
-  //     );
-
-  //     const hasEmptyFiles = !_isEmpty(emptyFiles);
-  //     const hasDuplicateFiles = !_isEmpty(duplicateFiles);
-
-  //     if (maxFileNumberReached) {
-  //       setWarningMsg(
-  //         <div className="content">
-  //           <Message
-  //             warning
-  //             icon="warning circle"
-  //             // header={i18next.t("Could not upload files.")}
-  //             // content={i18next.t(
-  //             //   `Uploading the selected files would result in ${
-  //             //     filesList.length + acceptedFiles.length
-  //             //   } files (max.${quota.maxFiles})`
-  //             // )}
-  //           />
-  //         </div>
-  //       );
-  //     } else if (maxFileStorageReached) {
-  //       setWarningMsg(
-  //         <div className="content">
-  //           <Message
-  //             warning
-  //             icon="warning circle"
-  //             // header={i18next.t("Could not upload files.")}
-  //             content={
-  //               <>
-  //                 {/* {i18next.t("Uploading the selected files would result in")}{" "} */}
-  //                 {humanReadableBytes(
-  //                   filesSize + acceptedFilesSize,
-  //                   decimalSizeDisplay
-  //                 )}
-  //                 {/* {i18next.t("but the limit is")} */}
-  //                 {humanReadableBytes(quota.maxStorage, decimalSizeDisplay)}.
-  //               </>
-  //             }
-  //           />
-  //         </div>
-  //       );
-  //     } else {
-  //       let warnings = [];
-
-  //       if (hasDuplicateFiles) {
-  //         warnings.push(
-  //           <Message
-  //             warning
-  //             icon="warning circle"
-  //             // header={i18next.t("The following files already exist")}
-  //             list={_map(duplicateFiles, "name")}
-  //           />
-  //         );
-  //       }
-
-  //       if (!allowEmptyFiles && hasEmptyFiles) {
-  //         warnings.push(
-  //           <Message
-  //             warning
-  //             icon="warning circle"
-  //             // header={i18next.t("Could not upload all files.")}
-  //             // content={i18next.t("Empty files were skipped.")}
-  //             list={_map(emptyFiles, "name")}
-  //           />
-  //         );
-  //       }
-
-  //       if (!_isEmpty(warnings)) {
-  //         setWarningMsg(<div className="content">{warnings}</div>);
-  //       }
-
-  //       const filesToUpload = allowEmptyFiles
-  //         ? [...nonEmptyFiles, ...emptyFiles]
-  //         : nonEmptyFiles;
-
-  //       // Proceed with uploading files if there are any to upload
-  //       if (!_isEmpty(filesToUpload)) {
-  //         uploadFiles(formikDraft, filesToUpload);
-  //       }
-  //     }
-  //   },
-  //   multiple: true,
-  //   noClick: true,
-  //   noKeyboard: true,
-  //   disabled: false,
-  // };
 
   const displayImportBtn =
     filesEnabled && isDraftRecord && hasParentRecord && !filesList.length;
@@ -264,7 +157,8 @@ export const UppyUploaderComponent = ({
                 <Grid.Column verticalAlign="middle">
                   <FilesListTable
                     filesList={filesList}
-                    filesLocked={filesLocked}
+                    filesEnabled={filesEnabled}
+                    filesLocked={lockFileUploader}
                     deleteFile={deleteFile}
                     decimalSizeDislay={decimalSizeDisplay}
                   />
