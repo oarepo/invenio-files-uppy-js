@@ -13,6 +13,7 @@ import "@uppy/core/dist/style.min.css";
 // TODO: reset .uppy-DashboardContent-bar z-index
 // TODO: reset .uppy-StatusBar z-index
 import "@uppy/dashboard/dist/style.min.css";
+import "./style.css";
 
 import Uppy from "@uppy/core";
 import { Dashboard } from "@uppy/react";
@@ -69,14 +70,13 @@ export const UppyUploaderComponent = ({
   const filesEnabled = _get(formikDraft, "files.enabled", false);
   const filesSize = filesList.reduce((totalSize, file) => (totalSize += file.size), 0);
   const lockFileUploader = !isDraftRecord && filesLocked;
+  const filesLeft = filesList.length < quota.maxFiles;
 
   const restrictions = {
     minFileSize: allowEmptyFiles ? 0 : 1,
     maxNumberOfFiles: quota.maxFiles - filesList.length,
     maxTotalFileSize: quota.maxStorage - filesSize,
   };
-
-  console.log({ files });
 
   function checkForDuplicates(file, files) {
     console.log(files, filesList.includes(file.name), filesList, file.name);
@@ -86,6 +86,7 @@ export const UppyUploaderComponent = ({
     () =>
       new Uppy({
         debug: true,
+        autoProceed: true,
         restrictions,
         onBeforeFileAdded: checkForDuplicates,
       }).use(InvenioMultipartUploader, {
@@ -219,11 +220,6 @@ export const UppyUploaderComponent = ({
   //   disabled: false,
   // };
 
-  const filesLeft = filesList.length < quota.maxFiles;
-  if (!filesLeft) {
-    // dropzoneParams["disabled"] = true;
-  }
-
   const displayImportBtn =
     filesEnabled && isDraftRecord && hasParentRecord && !filesList.length;
   return (
@@ -258,6 +254,7 @@ export const UppyUploaderComponent = ({
                 style={{ width: "100%" }}
                 uppy={uppy}
                 id="uppy-uploader-dashboard"
+                disabled={!filesLeft}
                 // `null` means "do not display a Done button in a status bar"
                 doneButtonHandler={null}
                 {...defaultDashboardProps}

@@ -1,0 +1,11 @@
+.uppy-Dashboard-AddFiles {
+    padding: 1rem;
+}
+
+.uppy-Dashboard-AddFiles-title {
+    padding-top: 1rem !important;
+}
+
+.uppy-DashboardContent-bar, .uppy-StatusBar {
+    z-index: 10;
+}

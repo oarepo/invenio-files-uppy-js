@@ -56,8 +56,12 @@ export class InvenioMultipartUploader extends AwsS3Multipart {
   #completeSinglePartUpload = (file, response) => {
     const { uploadURL } = response;
     if (!uploadURL) return;
-
-    this.completeMultipartUpload(file, { uploadId: file.file_id, key: response.key });
+    // TODO: fix a bug with file.links missing on second upload batch
+    console.log("COMPLETE SINGLE", file, response);
+    return this.completeMultipartUpload(file, {
+      uploadId: file.file_id,
+      key: response.key,
+    });
   };
 
   #setResumableUploadsCapability = (boolean) => {
@@ -127,10 +131,10 @@ export class InvenioMultipartUploader extends AwsS3Multipart {
     file.transferOptions = { fileSize: file.size, type: "L" };
 
     const response = await this.opts.getUploadParams(file, options);
-
     file.links = response.links;
     file.file_id = response.file_id;
 
+    console.log("GUP>R", file);
     return response;
   }
 
