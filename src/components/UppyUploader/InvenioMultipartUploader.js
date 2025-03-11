@@ -21,7 +21,7 @@ const defaultOptions = {
 };
 
 export class InvenioMultipartUploader extends AwsS3Multipart {
-  static VERSION = "0.0.1";
+  static VERSION = "0.0.2";
   #maxMultipartParts = 10_000;
 
   constructor(uppy, opts) {

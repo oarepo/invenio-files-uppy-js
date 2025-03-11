@@ -1,6 +1,6 @@
 {
   "name": "@inveniosoftware/invenio-files-uppy",
-  "version": "0.0.1",
+  "version": "0.0.2",
   "description": "Uppy.io uploader integration for managing file uploads in Invenio deposit forms",
   "main": "dist/cjs/index.js",
   "browser": "dist/cjs/index.js",

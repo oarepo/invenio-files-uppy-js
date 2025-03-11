@@ -27,7 +27,11 @@ import { Button, Grid, Icon, Message } from "semantic-ui-react";
 import { humanReadableBytes } from "react-invenio-forms";
 import Overridable from "react-overridable";
 import { InvenioMultipartUploader } from "./InvenioMultipartUploader";
-import { useFilesList, FilesListTable } from "@js/invenio_rdm_records";
+import {
+  useFilesList,
+  FilesListTable,
+  FileUploaderToolbar,
+} from "@js/invenio_rdm_records";
 
 const defaultDashboardProps = {
   proudlyDisplayPoweredByUppy: false,
@@ -78,10 +82,13 @@ export const UppyUploaderComponent = ({
     console.log(files, filesList.includes(file.name), filesList, file.name);
   }
 
-  const [uppy] = useState(() =>
-    new Uppy({ debug: true, restrictions, onBeforeFileAdded: checkForDuplicates }).use(
-      InvenioMultipartUploader,
-      {
+  const [uppy] = useState(
+    () =>
+      new Uppy({
+        debug: true,
+        restrictions,
+        onBeforeFileAdded: checkForDuplicates,
+      }).use(InvenioMultipartUploader, {
         // Bind Redux file actions to the uploader plugin
         initializeUpload: (file) => initializeFileUpload(formikDraft, file),
         finalizeUpload: (file) => finalizeUpload(file.links.commit, file),
@@ -94,11 +101,11 @@ export const UppyUploaderComponent = ({
         // *after* their creation. PUT request with this added header
         // results in HTTP 400 Bad Request. Needs more investigation.
         checkPartIntegrity: false,
-      }
-    )
+      })
+    // .use(InvenioRecordFilesSource, {})
   );
 
-  // filesList.forEach((file) => uppy.addFile(file));
+  console.log(uppy.getFiles());
 
   // TODO: this hook-based approach could be used after React upgrade
   // const filesList = useUppyState(uppy, (state) => state.files);
@@ -220,39 +227,57 @@ export const UppyUploaderComponent = ({
   const displayImportBtn =
     filesEnabled && isDraftRecord && hasParentRecord && !filesList.length;
   return (
-    <Overridable
-      id="ReactInvenioDeposit.FileUploader.FileUploaderArea.container"
-      filesList={filesList}
-      // dropzoneParams={dropzoneParams}
-      filesLocked={lockFileUploader}
-      filesEnabled={filesEnabled}
-      deleteFile={deleteFile}
-      decimalSizeDisplay={decimalSizeDisplay}
-      {...uiProps}
-    >
-      {filesEnabled && (
-        <Grid.Row className="pt-0 pb-0">
-          <Dashboard
-            uppy={uppy}
-            id="uppy-uploader-dashboard"
-            // `null` means "do not display a Done button in a status bar"
-            doneButtonHandler={null}
-            {...defaultDashboardProps}
+    <Grid className="file-uploader">
+      <Grid.Row className="pt-10 pb-5">
+        {!lockFileUploader && (
+          <FileUploaderToolbar
             {...uiProps}
+            config={config}
+            filesEnabled={filesEnabled}
+            filesList={filesList}
+            filesSize={filesSize}
+            quota={quota}
+            decimalSizeDisplay={decimalSizeDisplay}
           />
-          {filesList.length !== 0 && (
-            <Grid.Column verticalAlign="middle">
-              <FilesListTable
-                filesList={filesList}
-                filesLocked={filesLocked}
-                deleteFile={deleteFile}
-                decimalSizeDislay={decimalSizeDisplay}
+        )}
+      </Grid.Row>
+      <Overridable
+        id="ReactInvenioDeposit.FileUploader.FileUploaderArea.container"
+        filesList={filesList}
+        // dropzoneParams={dropzoneParams}
+        filesLocked={lockFileUploader}
+        filesEnabled={filesEnabled}
+        deleteFile={deleteFile}
+        decimalSizeDisplay={decimalSizeDisplay}
+        {...uiProps}
+      >
+        {filesEnabled && (
+          <Grid.Row stretched className="pt-0 pb-0">
+            <Grid.Column width={16}>
+              <Dashboard
+                style={{ width: "100%" }}
+                uppy={uppy}
+                id="uppy-uploader-dashboard"
+                // `null` means "do not display a Done button in a status bar"
+                doneButtonHandler={null}
+                {...defaultDashboardProps}
+                {...uiProps}
               />
+              {filesList.length !== 0 && (
+                <Grid.Column verticalAlign="middle">
+                  <FilesListTable
+                    filesList={filesList}
+                    filesLocked={filesLocked}
+                    deleteFile={deleteFile}
+                    decimalSizeDislay={decimalSizeDisplay}
+                  />
+                </Grid.Column>
+              )}
             </Grid.Column>
-          )}
-        </Grid.Row>
-      )}
-    </Overridable>
+          </Grid.Row>
+        )}
+      </Overridable>
+    </Grid>
   );
 };
 
