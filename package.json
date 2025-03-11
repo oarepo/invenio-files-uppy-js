@@ -39,7 +39,7 @@
   "peerDependencies": {
     "@babel/runtime": "^7.9.0",
     "formik": "^2.2.9",
-    "react": "^16.13.0",
+    "react": "^19.0.0",
     "react-dom": "^16.13.0",
     "react-invenio-forms": "^3.0.0",
     "react-overridable": "^0.0.3"
@@ -67,7 +67,7 @@
     "http-server": "14.1.1",
     "json": "^10.0.0",
     "prop-types": "^15.8.1",
-    "react": "^16.13.0",
+    "react": "^19.0.0",
     "react-dom": "^16.13.0",
     "react-invenio-forms": "^3.0.0",
     "react-overridable": "^0.0.3",
